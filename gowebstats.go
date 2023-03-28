@@ -25,8 +25,8 @@ type Config struct {
 
 type RequestInfo struct {
 	Time      time.Time `parquet:"name=time, type=TIMESTAMP_MILLIS"`
-	IP        string    `parquet:"name=ip, type=UTF8"`
-	UserAgent string    `parquet:"name=user_agent, type=UTF8"`
+	IP        string    `parquet:"name=ip, type=BYTE_ARRAY, convertedtype=UTF8, encoding=PLAIN_DICTIONARY"`
+	UserAgent string    `parquet:"name=user_agent, type=BYTE_ARRAY, convertedtype=UTF8, encoding=PLAIN_DICTIONARY"`
 }
 
 var (
