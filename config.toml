@@ -1,7 +1,4 @@
-[server]
-port = 8000
-LogDir = "./logs"
-WhitelistedDomains = ["localhost", "127.0.0.1", ""]
-
-[queue]
-size = 1000
+log_dir = "logs"
+whitelisted_domains = ["localhost", "127.0.0.1", "", "localhost:8002"]
+port = ":8002"
+queue_size = 10

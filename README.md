@@ -33,5 +33,4 @@ After the generation of `gowebstats.go` above, I ran the following:
 	go mod tidy
 	go build
 
-Copied this `config.toml` from [sweetpywebstats](https://github.com/btbytes/sweetpywebstats) and modified the config keys to `LogDir` and `WhitelistedDomains` to match Go style `CapitalCase`.
-
+Copied this `config.toml` from [sweetpywebstats](https://github.com/btbytes/sweetpywebstats)

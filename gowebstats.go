@@ -18,7 +18,9 @@ import (
 
 type Config struct {
 	WhitelistedDomains []string `toml:"whitelisted_domains"`
-	LogDir             string   `toml:"log_dir"`
+	LogDir             string   `default:"logs" toml:"log_dir"`
+	QueueSize          int      `toml:"queue_size"`
+	Port               string   `default:":8080" toml:"port"`
 }
 
 type RequestInfo struct {
@@ -45,12 +47,13 @@ func main() {
 
 	// Create log directory if it doesn't exist
 	if err := os.MkdirAll(config.LogDir, 0755); err != nil {
-		log.Fatalf("Error creating log directory: %v", err)
+		log.Fatalf("Error creating log directory (%s): %v", config.LogDir, err)
 	}
 
 	// Start HTTP server
+	fmt.Printf("Starting gowebstats on %s\n", config.Port)
 	http.HandleFunc("/", handleRequest)
-	if err := http.ListenAndServe(":8080", nil); err != nil {
+	if err := http.ListenAndServe(config.Port, nil); err != nil {
 		log.Fatalf("Error starting HTTP server: %v", err)
 	}
 }
@@ -74,7 +77,7 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 		IP:        getIP(r),
 		UserAgent: r.UserAgent(),
 	})
-	if len(logQueue) == 1000 {
+	if len(logQueue) == config.QueueSize {
 		writeLog()
 		logQueue = nil
 	}
