@@ -1,10 +1,8 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -14,19 +12,21 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
+	"github.com/xitongsys/parquet-go-source/local"
+	"github.com/xitongsys/parquet-go/writer"
 )
 
 type Config struct {
 	WhitelistedDomains []string `toml:"whitelisted_domains"`
-	LogDir             string   `default:"logs" toml:"log_dir"`
-	QueueSize          int      `toml:"queue_size"`
-	Port               string   `default:":8080" toml:"port"`
+	LogDir             string   `toml:"log_dir"`
+	LogQueueSize       int      `toml:"log_queue_size"`
+	Port               int      `toml:"port"`
 }
 
 type RequestInfo struct {
-	Time      time.Time `json:"time"`
-	IP        string    `json:"ip"`
-	UserAgent string    `json:"user_agent"`
+	Time      time.Time `parquet:"name=time, type=TIMESTAMP_MILLIS"`
+	IP        string    `parquet:"name=ip, type=UTF8"`
+	UserAgent string    `parquet:"name=user_agent, type=UTF8"`
 }
 
 var (
@@ -47,13 +47,14 @@ func main() {
 
 	// Create log directory if it doesn't exist
 	if err := os.MkdirAll(config.LogDir, 0755); err != nil {
-		log.Fatalf("Error creating log directory (%s): %v", config.LogDir, err)
+		log.Fatalf("Error creating log directory: %v", err)
 	}
 
 	// Start HTTP server
-	fmt.Printf("Starting gowebstats on %s\n", config.Port)
+	log.Printf("Starting gowebstats on %d", config.Port)                                                  // human
+	log.Printf("Will write parquet files to %s dir after %d entries", config.LogDir, config.LogQueueSize) // human
 	http.HandleFunc("/", handleRequest)
-	if err := http.ListenAndServe(config.Port, nil); err != nil {
+	if err := http.ListenAndServe(fmt.Sprintf(":%d", config.Port), nil); err != nil {
 		log.Fatalf("Error starting HTTP server: %v", err)
 	}
 }
@@ -77,7 +78,7 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 		IP:        getIP(r),
 		UserAgent: r.UserAgent(),
 	})
-	if len(logQueue) == config.QueueSize {
+	if len(logQueue) == config.LogQueueSize {
 		writeLog()
 		logQueue = nil
 	}
@@ -106,20 +107,27 @@ func getIP(r *http.Request) string {
 
 func writeLog() {
 	// Generate filename with timestamp
-	timestamp := time.Now().Format("2006-01-02T15:04:05")
-	filename := fmt.Sprintf("%s.json", timestamp)
+	timestamp := time.Now().Format("2006-01-02T15-04-05")
+	filename := fmt.Sprintf("%s.parquet", timestamp)
 	filepath := filepath.Join(config.LogDir, filename)
 
-	// Encode log queue to JSON
-	data, err := json.Marshal(logQueue)
+	// Create Parquet file writer
+	fw, err := local.NewLocalFileWriter(filepath)
 	if err != nil {
-		log.Fatalf("Error encoding log data: %v", err)
+		log.Fatalf("Error creating Parquet file: %v", err)
 	}
+	defer fw.Close()
 
-	// Write log file
-	if err := ioutil.WriteFile(filepath, data, 0644); err != nil {
-		log.Fatalf("Error writing log file: %v", err)
+	// Create Parquet file writer options
+	pw, err := writer.NewParquetWriterFromWriter(fw, new(RequestInfo), 4)
+	if err != nil {
+		log.Fatalf("Error creating Parquet writer: %v", err)
 	}
+	defer pw.WriteStop()
 
+	// Write log data to Parquet file
+	if err := pw.Write(logQueue); err != nil {
+		log.Fatalf("Error writing Parquet data: %v", err)
+	}
 	log.Printf("Wrote log file: %s", filename)
 }

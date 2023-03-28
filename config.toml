@@ -1,4 +1,4 @@
 log_dir = "logs"
 whitelisted_domains = ["localhost", "127.0.0.1", "", "localhost:8002"]
-port = ":8002"
-queue_size = 10
+port = 8002
+log_queue_size = 10
