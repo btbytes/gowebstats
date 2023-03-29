@@ -13,6 +13,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/xitongsys/parquet-go-source/local"
+	"github.com/xitongsys/parquet-go/parquet"
 	"github.com/xitongsys/parquet-go/writer"
 )
 
@@ -24,9 +25,9 @@ type Config struct {
 }
 
 type RequestInfo struct {
-	Time      time.Time `parquet:"name=time, type=TIMESTAMP_MILLIS"`
-	IP        string    `parquet:"name=ip, type=BYTE_ARRAY, convertedtype=UTF8, encoding=PLAIN_DICTIONARY"`
-	UserAgent string    `parquet:"name=user_agent, type=BYTE_ARRAY, convertedtype=UTF8, encoding=PLAIN_DICTIONARY"`
+	Time      int32  `parquet:"name=time, type=INT32, convertedtype=DATE"`
+	IP        string `parquet:"name=ip, type=BYTE_ARRAY, convertedtype=UTF8, encoding=PLAIN_DICTIONARY"`
+	UserAgent string `parquet:"name=user_agent, type=BYTE_ARRAY, convertedtype=UTF8, encoding=PLAIN_DICTIONARY"`
 }
 
 var (
@@ -74,7 +75,7 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 	// Save request info
 	logMutex.Lock()
 	logQueue = append(logQueue, RequestInfo{
-		Time:      time.Now(),
+		Time:      int32(time.Now().Unix() / 3600 / 24),
 		IP:        getIP(r),
 		UserAgent: r.UserAgent(),
 	})
@@ -116,18 +117,24 @@ func writeLog() {
 	if err != nil {
 		log.Fatalf("Error creating Parquet file: %v", err)
 	}
-	defer fw.Close()
 
 	// Create Parquet file writer options
-	pw, err := writer.NewParquetWriterFromWriter(fw, new(RequestInfo), 4)
+	pw, err := writer.NewParquetWriter(fw, new(RequestInfo), 4)
 	if err != nil {
 		log.Fatalf("Error creating Parquet writer: %v", err)
 	}
-	defer pw.WriteStop()
-
-	// Write log data to Parquet file
-	if err := pw.Write(logQueue); err != nil {
-		log.Fatalf("Error writing Parquet data: %v", err)
+	pw.CompressionType = parquet.CompressionCodec_SNAPPY // human
+	// defer pw.WriteStop() // human
+	for i := 0; i < len(logQueue); i++ { // human
+		ri := logQueue[i]                   // human
+		if err = pw.Write(ri); err != nil { // human
+			log.Println("Parquet Write error", err) // human
+		} // human
 	}
+	if err = pw.WriteStop(); err != nil { // human
+		log.Println("WriteStop error -- ", err) // human
+		return                                  // human
+	} // human
+	fw.Close() // human
 	log.Printf("Wrote log file: %s", filename)
 }
