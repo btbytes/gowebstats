@@ -25,7 +25,7 @@ type Config struct {
 }
 
 type RequestInfo struct {
-	Time      int32  `parquet:"name=time, type=INT32, convertedtype=DATE"`
+	Time      int32  `parquet:"name=time, type=INT32, convertedtype=DATE"` // human // change type to int32
 	IP        string `parquet:"name=ip, type=BYTE_ARRAY, convertedtype=UTF8, encoding=PLAIN_DICTIONARY"`
 	UserAgent string `parquet:"name=user_agent, type=BYTE_ARRAY, convertedtype=UTF8, encoding=PLAIN_DICTIONARY"`
 }
