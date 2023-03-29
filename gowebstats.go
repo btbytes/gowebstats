@@ -28,6 +28,7 @@ type RequestInfo struct {
 	Time      int32  `parquet:"name=time, type=INT32, convertedtype=DATE"` // human // change type to int32
 	IP        string `parquet:"name=ip, type=BYTE_ARRAY, convertedtype=UTF8, encoding=PLAIN_DICTIONARY"`
 	UserAgent string `parquet:"name=user_agent, type=BYTE_ARRAY, convertedtype=UTF8, encoding=PLAIN_DICTIONARY"`
+	Referer   string `parquet:"name=referer, type=BYTE_ARRAY, convertedtype=UTF8, encoding=PLAIN_DICTIONARY"`
 }
 
 var (
@@ -78,6 +79,7 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 		Time:      int32(time.Now().Unix() / 3600 / 24),
 		IP:        getIP(r),
 		UserAgent: r.UserAgent(),
+		Referer:   r.Referer(),
 	})
 	if len(logQueue) == config.LogQueueSize {
 		writeLog()

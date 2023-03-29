@@ -18,7 +18,7 @@ an empty CSS.
 
 ## The ChatGPT-3.5 prompt
 
-> write a go http server program that responds to all requests with an empty css file with correct http headers, and saves the request info - time, ip, and user agent into a queue size with a default 10,000 but is overridden by a config value read from config.toml, and when the queue gets full, it is written to a timestamped parquet file under a user specified location from config.toml; the http server should only log requests made to whitelisted  domains; the whitelisted domains are read from a config.toml file. the config.toml is accepted as a command line argument --config, with the default value being config.toml. the config file should also allow for the default Port to overridden as configuration value. Print a log message when the server starts with the local ip and port number.
+> write a go http server program that responds to all requests with an empty css file with correct http headers, and saves the request info - time, ip, and user agent, referer into a queue size with a default 10,000 but is overridden by a config value read from config.toml, and when the queue gets full, it is written to a timestamped parquet file under a user specified location from config.toml; the http server should only log requests made to whitelisted  domains; the whitelisted domains are read from a config.toml file. the config.toml is accepted as a command line argument --config, with the default value being config.toml. the config file should also allow for the default Port to overridden as configuration value. Print a log message when the server starts with the local ip and port number.
 
 The ChatGPT Response is the `gowebstats.go` file.
 
